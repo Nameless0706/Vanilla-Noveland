@@ -1,11 +1,11 @@
 import React from "react";
 import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
 
-import InputFieldset from "../../components/common/InputField.jsx";
+import InputFieldset from "@components/common/InputField.jsx";
 import { Link } from "react-router-dom";
-import { forgotPassword } from "../../api/authApi.js";
+import { forgotPassword } from "@api/authApi.js";
 import { toast } from "react-toastify";
-import { useFormValidation } from "../../hooks/useFormValidation.js";
+import { useFormValidation } from "@hooks/useFormValidation.js";
 
 function ForgotPassword() {
   const { formValues, formErrors, touched, handleChange, handleBlur } =

@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { faUser, faLock, faEnvelope } from "@fortawesome/free-solid-svg-icons";
 
-import InputFieldset from "../../components/common/InputField.jsx";
-import { useFormValidation } from "../../hooks/useFormValidation.js";
+import InputFieldset from "@components/common/InputField.jsx";
+import { useFormValidation } from "@hooks/useFormValidation.js";
 import { Link, useNavigate } from "react-router-dom";
-import { register } from "../../api/authApi.js";
+import { register } from "@api/authApi.js";
 import { toast } from "react-toastify";
 
 function Register() {
@@ -83,7 +83,7 @@ function Register() {
     Object.values(formValues).every((val) => val.trim() !== "");
 
   return (
-    <div className="flex justify-center items-center bg-[url('/src/assets/astronaut-nord.png')] bg-cover min-h-screen text-white font-light overflow-hidden">
+    <div className="flex justify-center items-center bg-[url('@assets/astronaut-nord.png')] bg-cover min-h-screen text-white font-light overflow-hidden">
       <div className="w-[450px] -mt-4 backdrop-blur-[10px] rounded-[20px] shadow-[0_0_10px_rgba(0,0,0,0.2)] px-10 py-5">
         <h1 className="font-medium text-center text-4xl">Register</h1>
 

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 
-import InputFieldset from "../../components/common/InputField.jsx";
+import InputFieldset from "@components/common/InputField.jsx";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { verifyOtp } from "../../api/authApi.js";
+import { verifyOtp } from "@api/authApi.js";
 import { toast } from "react-toastify";
 
 function VerifyOtp() {

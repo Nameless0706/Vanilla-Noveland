@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope, faLock } from "@fortawesome/free-solid-svg-icons";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
-import styles from "./Login.module.css";
+import styles from "@pages/auth/Login.module.css";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "../../api/authApi";
+import { login } from "@api/authApi";
 import { toast } from "react-toastify";
 
 function Login() {
