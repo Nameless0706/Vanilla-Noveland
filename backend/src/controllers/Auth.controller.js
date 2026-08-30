@@ -7,6 +7,7 @@ import {
   logoutService,
   refreshAccessTokenService,
   forgotPasswordService,
+  resetPasswordService,
 } from "../services/Auth.service.js";
 
 export const register = async (req, res) => {
@@ -101,10 +102,31 @@ export const logout = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const email = req.body.email;
-    const baseURL = `${req.protocol}://${req.get("host")}`;
-    await forgotPasswordService(email, baseURL);
+    const clientURL = req.headers.origin || process.env.CLIENT_URL;
+    await forgotPasswordService(email, clientURL);
 
-    return successResponse(res, 201, "Forgotpassword here");
+    return successResponse(
+      res,
+      200,
+      "Password reset link has been sent to your email",
+    );
+  } catch (error) {
+    return errorResponse(
+      res,
+      error.status || 500,
+      error.message || "Server error",
+    );
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    await resetPasswordService(token, password);
+
+    return successResponse(res, 200, "Password has been reset successfully");
   } catch (error) {
     return errorResponse(
       res,

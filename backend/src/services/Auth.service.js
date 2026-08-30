@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import "dotenv/config";
 
 import User from "../models/User.model.js";
@@ -32,8 +33,6 @@ export const registerService = async ({ display_name, email, password }) => {
 
 export const sendVerifyOtpService = async ({ userId }) => {
   const user = await User.findById(userId);
-  
-  
 };
 
 export const loginService = async ({ email, password, rememberMe }) => {
@@ -92,7 +91,7 @@ export const logoutService = async (userId) => {
   await RefreshToken.deleteOne({ userId });
 };
 
-export const forgotPasswordService = async (email, baseURL) => {
+export const forgotPasswordService = async (email, clientURL) => {
   if (!email) {
     throw { status: 400, message: "Email is required" };
   }
@@ -105,16 +104,58 @@ export const forgotPasswordService = async (email, baseURL) => {
   // Create reset token and save to db
   const resetToken = user.createResetPasswordToken();
 
-  console.log(resetToken);
-  await user.save({ validateBeforeSave: false }); //skip fields constraint check
+  await user.save({ validateBeforeSave: false }); // skip fields constraint check
 
-  // Send mail with token to user (check in mailtrap sandbox plz)
-  const resetURL = baseURL + `/api/v1/users/resetPassword/${resetToken}`;
-  console.log(resetURL);
-  await sendMail({
-    subject: "Reset your password",
-    html: resetPasswordEmail(resetURL),
+  // Send mail with reset URL pointing to frontend reset password page
+  const frontendURL =
+    clientURL || process.env.CLIENT_URL || "http://localhost:5173";
+  const resetURL = `${frontendURL}/reset-password/${resetToken}`;
+
+  try {
+    await sendMail({
+      to: user.email,
+      subject: "Reset your password",
+      html: resetPasswordEmail(user.email, resetURL),
+    });
+  } catch (error) {
+    user.password_reset_token = undefined;
+    user.password_reset_expire = undefined;
+    user.save({validateBeforeSave: false});
+    throw { status: 500, message: "Failed to send reset email" };
+  }
+};
+
+export const resetPasswordService = async (token, password) => {
+  if (!token) {
+    throw { status: 400, message: "Reset token is required" };
+  }
+  if (!password) {
+    throw { status: 400, message: "New password is required" };
+  }
+
+  // Hash the incoming raw token to match what is in DB
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    password_reset_token: hashedToken,
+    password_reset_expire: { $gt: Date.now() },
   });
+
+  if (!user) {
+    throw { status: 400, message: "Token is invalid or has expired" };
+  }
+
+  // Hash new password and update user
+  const hashedPassword = await bcrypt.hash(password, 10);
+  user.password = hashedPassword;
+  user.password_reset_token = undefined;
+  user.password_reset_expire = undefined;
+  await user.save();
+
+  // Invalidate any active refresh tokens for security
+  await RefreshToken.deleteMany({ userId: user._id });
+
+  return true;
 };
 
 export const refreshAccessTokenService = async (token) => {

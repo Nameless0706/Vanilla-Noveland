@@ -13,7 +13,7 @@
 //   console.log("Welcome email sent:", info.messageId);
 // };
 
-export const verifyOtpMail = (otp) => {
+export const verifyOtpMail = (otp, email) => {
   return `<body
     style="
       background-color: #eef2ff;
@@ -57,7 +57,7 @@ export const verifyOtpMail = (otp) => {
       <!-- CONTENT -->
       <div style="padding-left: 30px; color: hsl(217, 33%, 17%)">
         <p style="font-size: 1.2rem; margin: 0; margin-top: 10px">
-          Hello {display_name},
+          Hello ${email},
         </p>
         <p
           style="font-size: 1.1rem; margin: 0; margin: 15px 0px; color: #334155"
@@ -108,7 +108,7 @@ export const verifyOtpMail = (otp) => {
   </body>`;
 };
 
-export const resetPasswordEmail = (resetURL) => {
+export const resetPasswordEmail = (email, resetURL) => {
   return `<body
     style="
       background-color: #eef2ff;
@@ -146,35 +146,46 @@ export const resetPasswordEmail = (resetURL) => {
           font-weight: 700;
         "
       >
-        Verify your email
+        Reset your password
       </p>
 
       <!-- CONTENT -->
-      <div style="padding-left: 30px; color: hsl(217, 33%, 17%)">
-        <p style="font-size: 1.2rem; margin: 0; margin-top: 10px">
-          Hello {display_name},
+      <div style="padding: 0 30px; color: hsl(217, 33%, 17%)">
+        <p style="font-size: 1.1rem; margin: 0; margin-top: 10px">
+          Hello <strong>${email}</strong>,
         </p>
         <p
-          style="font-size: 1.1rem; margin: 0; margin: 15px 0px; color: #334155"
+          style="font-size: 1rem; margin: 15px 0px; color: #334155; line-height: 1.5;"
         >
-          Please confirm your email using the OTP below:
+          We received a request to reset the password for your Noveland account. Click the button below to set a new password:
         </p>
       </div>
 
-      <!-- OTP PLACEHOLDER -->
-      <div
-        style="
-          margin: auto;
-          border-radius: 10px;
-          width: 88%;
-          padding: 8px 0;
-          background-color: #e8eaf1;
-          text-align: center;
-        "
-      >
-        <h1 style="margin: 8px 0px; color: #2563eb; letter-spacing: 8px; font-size: 2.2rem;">
-          123456
-        </h1>
+      <!-- BUTTON CTA -->
+      <div style="text-align: center; margin: 25px 0;">
+        <a
+          href="${resetURL}"
+          target="_blank"
+          style="
+            background: #2563eb;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            display: inline-block;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+          "
+        >
+          Reset Password
+        </a>
+      </div>
+
+      <!-- FALLBACK LINK -->
+      <div style="padding: 0 30px; margin-top: 15px; color: #64748b; font-size: 0.85rem; word-break: break-all;">
+        <p style="margin: 0 0 5px 0;">If the button above does not work, copy and paste this URL into your browser:</p>
+        <a href="${resetURL}" style="color: #2563eb;">${resetURL}</a>
       </div>
 
       <!-- FOOTER -->
@@ -190,7 +201,7 @@ export const resetPasswordEmail = (resetURL) => {
         "
       >
         <p style="margin: 4px 0">
-          This OTP is valid for <strong>5 minutes</strong>.
+          This link is valid for <strong>15 minutes</strong>.
         </p>
         <p style="margin: 4px 0">
           If you did not request this, please ignore this message.

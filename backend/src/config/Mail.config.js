@@ -10,20 +10,30 @@ import nodemailer from "nodemailer";
 // });
 
 export const sendMail = async (option) => {
+  // With mailtrap
+  // const transporter = nodemailer.createTransport({
+  //   host: process.env.MAILTRAP_HOST,
+  //   port: process.env.MAILTRAP_PORT,
+  //   auth: {
+  //     user: process.env.MAILTRAP_USER,
+  //     pass: process.env.MAILTRAP_PASSWORD,
+  //   },
+  // });
+
+  // With gmail.
   const transporter = nodemailer.createTransport({
-    host: process.env.MAILTRAP_HOST,
-    port: process.env.MAILTRAP_PORT,
+    service: "gmail",
     auth: {
-      user: process.env.MAILTRAP_USER,
-      pass: process.env.MAILTRAP_PASSWORD,
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
     },
   });
 
-  console.log(transporter.options)
+  //console.log(transporter.options);
 
   const emailOptions = {
-    from: `"${process.env.APP_NAME}" <${process.env.APP_GMAIL}>`,
-    to: "Test User <user@test.com>",
+    from: `"${process.env.APP_NAME || "Noveland"}" <${process.env.APP_GMAIL || process.env.GMAIL_USER}>`,
+    to: option.to,
     subject: option.subject,
     html: option.html,
   };

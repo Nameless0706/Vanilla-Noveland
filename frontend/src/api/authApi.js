@@ -24,12 +24,19 @@ export const forgotPassword = async (email) => {
   return response.data;
 };
 
+export const resetPassword = async (token, password) => {
+  const response = await axiosInstance.post(`/auth/reset-password/${token}`, {
+    password,
+  });
+  return response.data;
+};
+
 export const verifyOtp = async (email, otp) => {
   const response = await axiosInstance.post("/auth/verify", {
     email,
     otp,
   });
 
-  console.log(email, otp)
+  console.log(email, otp);
   return response.data;
 };
