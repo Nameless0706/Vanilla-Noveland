@@ -28,7 +28,19 @@ function Login() {
         navigate("/home");
       }
     } catch (error) {
-      toast.error(error.message || "Invalid credentials");
+      if (error.isNotVerified || error.status === 403) {
+        toast.warning(
+          error.message || "Please verify your email before logging in.",
+        );
+        navigate("/verify", {
+          state: {
+            email: error.email || email.trim(),
+            from: "login",
+          },
+        });
+      } else {
+        toast.error(error.message || "Invalid credentials");
+      }
     } finally {
       setIsLoading(false);
     }

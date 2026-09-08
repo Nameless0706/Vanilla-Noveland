@@ -32,8 +32,8 @@ export const sendMail = async (option) => {
   //console.log(transporter.options);
 
   const emailOptions = {
-    from: `"${process.env.APP_NAME}" <${process.env.APP_GMAIL}>`,
-    to: "Test User <user@test.com>",
+    from: `"${process.env.APP_NAME || "Noveland"}" <${process.env.GMAIL_USER || process.env.APP_GMAIL}>`,
+    to: option.to,
     subject: option.subject,
     html: option.html,
   };

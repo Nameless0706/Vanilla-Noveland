@@ -42,7 +42,10 @@ axiosInstance.interceptors.response.use(
     return Promise.reject({
       status,
       message: data?.message || "Something went wrong",
+      isNotVerified: Boolean(data?.isNotVerified),
+      email: data?.email,
       errors: data?.errors || null,
+      data,
       raw: error,
     });
   },

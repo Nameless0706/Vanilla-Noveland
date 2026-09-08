@@ -111,8 +111,32 @@ export const verifyOtpService = async ({ email, otp }) => {
   }
 
   if (user.is_verified) {
+    const accessToken = jwt.sign(
+      { userId: user._id },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" },
+    );
+
+    const refreshToken = jwt.sign(
+      { userId: user._id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: "7d" },
+    );
+
+    await RefreshToken.findOneAndUpdate(
+      { userId: user._id },
+      { token: refreshToken },
+      { upsert: true, new: true },
+    );
+
     user.password = undefined;
-    return { user, message: "User is already verified" };
+    return {
+      user,
+      accessToken,
+      refreshToken,
+      refreshTokenMaxAge: 7 * 24 * 60 * 60 * 1000,
+      message: "User is already verified",
+    };
   }
 
   // Lookup OTP in VerificationToken
@@ -181,6 +205,42 @@ export const loginService = async ({ email, password, rememberMe }) => {
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw { status: 400, message: "Invalid email or password" };
+
+  if (!user.is_verified) {
+    // Generate fresh OTP code (10 minutes expiry) and store in VerificationToken
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await VerificationToken.findOneAndUpdate(
+      { userId: user._id, type: "otp" },
+      {
+        userId: user._id,
+        type: "otp",
+        token: otp,
+        expiresAt,
+      },
+      { upsert: true, new: true },
+    );
+
+    // Send verification email
+    try {
+      await sendMail({
+        to: user.email,
+        subject: "Verify your email - Noveland",
+        html: verifyOtpMail(otp, user.email),
+      });
+    } catch (err) {
+      console.error("Failed to send verification email on login:", err);
+    }
+
+    throw {
+      status: 403,
+      message:
+        "Please verify your email address before logging in. A new verification code has been sent to your email.",
+      isNotVerified: true,
+      email: user.email,
+    };
+  }
 
   // Create JWTs
   const refreshTokenExpiry = rememberMe

@@ -96,6 +96,11 @@ function VerifyOtp() {
     <div className="flex justify-center items-center bg-[url('@assets/astronaut-nord.png')] bg-cover min-h-screen text-white font-light overflow-hidden">
       <div className="w-[450px] -mt-4 backdrop-blur-[10px] rounded-[20px] shadow-[0_0_10px_rgba(0,0,0,0.2)] px-10 py-6">
         <h1 className="font-medium text-center text-3xl mb-2">Verify OTP</h1>
+        {location.state?.from === "login" && (
+          <div className="mb-3 bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs px-3 py-2 rounded-xl text-center leading-relaxed">
+            Please verify your email before logging in. A new verification code has been sent to your inbox!
+          </div>
+        )}
         <p className="text-center text-sm text-gray-300 mb-4">
           Enter the 6-digit code sent to
         </p>

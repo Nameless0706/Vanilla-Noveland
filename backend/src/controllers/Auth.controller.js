@@ -96,11 +96,13 @@ export const login = async (req, res) => {
       accessToken,
     });
   } catch (error) {
-    return errorResponse(
-      res,
-      error.status || 500,
-      error.message || "Server error",
-    );
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Server error",
+      isNotVerified: Boolean(error.isNotVerified),
+      email: error.email || null,
+      errors: error.errors || null,
+    });
   }
 };
 
