@@ -18,17 +18,11 @@ export const registerService = async ({ display_name, email, password }) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Generate 6-digit OTP code (10 minutes expiry)
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpire = new Date(Date.now() + 10 * 60 * 1000);
-
   const user = await User.create({
     display_name,
     email,
     password: hashedPassword,
     is_verified: false,
-    otp,
-    otp_expire: otpExpire,
   });
 
   // Generate 6-digit OTP code (10 minutes expiry) and store in VerificationToken
@@ -55,11 +49,9 @@ export const registerService = async ({ display_name, email, password }) => {
     });
   } catch (error) {
     console.error("Failed to send verification email:", error);
-    // User is created, they can use resend OTP if needed
   }
 
   user.password = undefined;
-  user.otp = undefined;
 
   return user;
 };
@@ -79,12 +71,8 @@ export const sendVerifyOtpService = async ({ email }) => {
     throw { status: 400, message: "Email is already verified" };
   }
 
-  // Generate new OTP
   // Generate new OTP and store in VerificationToken
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  user.otp = otp;
-  user.otp_expire = new Date(Date.now() + 10 * 60 * 1000);
-  await user.save({ validateBeforeSave: false });
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   await VerificationToken.findOneAndUpdate(
@@ -124,11 +112,9 @@ export const verifyOtpService = async ({ email, otp }) => {
 
   if (user.is_verified) {
     user.password = undefined;
-    user.otp = undefined;
     return { user, message: "User is already verified" };
   }
 
-  if (!user.otp || user.otp !== otp.toString().trim()) {
   // Lookup OTP in VerificationToken
   const tokenDoc = await VerificationToken.findOne({
     userId: user._id,
@@ -142,7 +128,6 @@ export const verifyOtpService = async ({ email, otp }) => {
     };
   }
 
-  if (user.otp_expire && new Date(user.otp_expire) < new Date()) {
   if (tokenDoc.expiresAt && new Date(tokenDoc.expiresAt) < new Date()) {
     throw {
       status: 400,
@@ -150,11 +135,8 @@ export const verifyOtpService = async ({ email, otp }) => {
     };
   }
 
-  // Mark user as verified and clear OTP
   // Mark user as verified
   user.is_verified = true;
-  user.otp = undefined;
-  user.otp_expire = undefined;
   await user.save({ validateBeforeSave: false });
 
   // Delete used OTP token
@@ -225,7 +207,6 @@ export const loginService = async ({ email, password, rememberMe }) => {
   );
 
   user.password = undefined;
-  user.otp = undefined;
 
   return {
     user,
@@ -249,8 +230,6 @@ export const forgotPasswordService = async (email, clientURL) => {
     throw { status: 404, message: "Could not find user with given email" };
   }
 
-  // Create reset token and save to db
-  const resetToken = user.createResetPasswordToken();
   // Generate raw reset token and hashed token
   const resetToken = crypto.randomBytes(32).toString("hex");
   const hashedToken = crypto
@@ -259,7 +238,6 @@ export const forgotPasswordService = async (email, clientURL) => {
     .digest("hex");
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-  await user.save({ validateBeforeSave: false }); // skip fields constraint check
   // Store in VerificationToken
   await VerificationToken.findOneAndUpdate(
     { userId: user._id, type: "password_reset" },
@@ -284,9 +262,6 @@ export const forgotPasswordService = async (email, clientURL) => {
       html: resetPasswordEmail(user.email, resetURL),
     });
   } catch (error) {
-    user.password_reset_token = undefined;
-    user.password_reset_expire = undefined;
-    await user.save({ validateBeforeSave: false });
     await VerificationToken.deleteOne({
       userId: user._id,
       type: "password_reset",
@@ -303,20 +278,15 @@ export const resetPasswordService = async (token, password) => {
     throw { status: 400, message: "New password is required" };
   }
 
-  // Hash the incoming raw token to match what is in DB
   // Hash the incoming raw token to match what is stored in VerificationToken
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  const user = await User.findOne({
-    password_reset_token: hashedToken,
-    password_reset_expire: { $gt: Date.now() },
   const tokenDoc = await VerificationToken.findOne({
     token: hashedToken,
     type: "password_reset",
     expiresAt: { $gt: new Date() },
   });
 
-  if (!user) {
   if (!tokenDoc) {
     throw { status: 400, message: "Token is invalid or has expired" };
   }
@@ -329,8 +299,6 @@ export const resetPasswordService = async (token, password) => {
   // Hash new password and update user
   const hashedPassword = await bcrypt.hash(password, 10);
   user.password = hashedPassword;
-  user.password_reset_token = undefined;
-  user.password_reset_expire = undefined;
   await user.save();
 
   // Delete used reset token
