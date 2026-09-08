@@ -5,34 +5,188 @@ import "dotenv/config";
 
 import User from "../models/User.model.js";
 import RefreshToken from "../models/RefreshToken.model.js";
-import { resetPasswordEmail } from "../utils/mailTemplates.js";
+import VerificationToken from "../models/VerificationToken.model.js";
+import { resetPasswordEmail, verifyOtpMail } from "../utils/mailTemplates.js";
 import { sendMail } from "../config/Mail.config.js";
 
 export const registerService = async ({ display_name, email, password }) => {
   const isEmailExists = await User.findOne({ email });
 
   if (isEmailExists) {
-    throw { status: 400, message: "Email already exists" };
+    throw { status: 409, message: "Email already exists" };
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  console.log(hashedPassword);
+  // Generate 6-digit OTP code (10 minutes expiry)
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpExpire = new Date(Date.now() + 10 * 60 * 1000);
 
   const user = await User.create({
     display_name,
     email,
     password: hashedPassword,
+    is_verified: false,
+    otp,
+    otp_expire: otpExpire,
   });
 
-  // remove password before returning
-  //user.password = undefined;
+  // Generate 6-digit OTP code (10 minutes expiry) and store in VerificationToken
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await VerificationToken.findOneAndUpdate(
+    { userId: user._id, type: "otp" },
+    {
+      userId: user._id,
+      type: "otp",
+      token: otp,
+      expiresAt,
+    },
+    { upsert: true, new: true },
+  );
+
+  // Send verification email
+  try {
+    await sendMail({
+      to: user.email,
+      subject: "Verify your email - Noveland",
+      html: verifyOtpMail(otp, user.email),
+    });
+  } catch (error) {
+    console.error("Failed to send verification email:", error);
+    // User is created, they can use resend OTP if needed
+  }
+
+  user.password = undefined;
+  user.otp = undefined;
 
   return user;
 };
 
-export const sendVerifyOtpService = async ({ userId }) => {
-  const user = await User.findById(userId);
+export const sendVerifyOtpService = async ({ email }) => {
+  if (!email) {
+    throw { status: 400, message: "Email is required" };
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw { status: 404, message: "User not found" };
+  }
+
+  if (user.is_verified) {
+    throw { status: 400, message: "Email is already verified" };
+  }
+
+  // Generate new OTP
+  // Generate new OTP and store in VerificationToken
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  user.otp = otp;
+  user.otp_expire = new Date(Date.now() + 10 * 60 * 1000);
+  await user.save({ validateBeforeSave: false });
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await VerificationToken.findOneAndUpdate(
+    { userId: user._id, type: "otp" },
+    {
+      userId: user._id,
+      type: "otp",
+      token: otp,
+      expiresAt,
+    },
+    { upsert: true, new: true },
+  );
+
+  try {
+    await sendMail({
+      to: user.email,
+      subject: "Verify your email - Noveland",
+      html: verifyOtpMail(otp, user.email),
+    });
+    return true;
+  } catch (error) {
+    console.error("Failed to send OTP email:", error);
+    throw { status: 500, message: "Failed to send verification email" };
+  }
+};
+
+export const verifyOtpService = async ({ email, otp }) => {
+  if (!email || !otp) {
+    throw { status: 400, message: "Email and OTP are required" };
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw { status: 404, message: "User not found" };
+  }
+
+  if (user.is_verified) {
+    user.password = undefined;
+    user.otp = undefined;
+    return { user, message: "User is already verified" };
+  }
+
+  if (!user.otp || user.otp !== otp.toString().trim()) {
+  // Lookup OTP in VerificationToken
+  const tokenDoc = await VerificationToken.findOne({
+    userId: user._id,
+    type: "otp",
+  });
+
+  if (!tokenDoc || tokenDoc.token !== otp.toString().trim()) {
+    throw {
+      status: 400,
+      message: "Invalid OTP code. Please check and try again.",
+    };
+  }
+
+  if (user.otp_expire && new Date(user.otp_expire) < new Date()) {
+  if (tokenDoc.expiresAt && new Date(tokenDoc.expiresAt) < new Date()) {
+    throw {
+      status: 400,
+      message: "OTP has expired. Please request a new code.",
+    };
+  }
+
+  // Mark user as verified and clear OTP
+  // Mark user as verified
+  user.is_verified = true;
+  user.otp = undefined;
+  user.otp_expire = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  // Delete used OTP token
+  await VerificationToken.deleteOne({ _id: tokenDoc._id });
+
+  // Generate session tokens so user is immediately authenticated
+  const accessToken = jwt.sign(
+    { userId: user._id },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: "15m" },
+  );
+
+  const refreshToken = jwt.sign(
+    { userId: user._id },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: "7d" },
+  );
+
+  await RefreshToken.findOneAndUpdate(
+    { userId: user._id },
+    { token: refreshToken },
+    { upsert: true, new: true },
+  );
+
+  user.password = undefined;
+
+  return {
+    user,
+    accessToken,
+    refreshToken,
+    refreshTokenMaxAge: 7 * 24 * 60 * 60 * 1000,
+  };
 };
 
 export const loginService = async ({ email, password, rememberMe }) => {
@@ -41,14 +195,12 @@ export const loginService = async ({ email, password, rememberMe }) => {
   }
 
   const user = await User.findOne({ email });
-  console.log(user);
   if (!user) throw { status: 400, message: "Invalid email or password" };
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw { status: 400, message: "Invalid email or password" };
 
-  // Create JWTS
-
+  // Create JWTs
   const refreshTokenExpiry = rememberMe
     ? ["30d", 30 * 24 * 60 * 60 * 1000]
     : ["1d", 24 * 60 * 60 * 1000];
@@ -72,12 +224,8 @@ export const loginService = async ({ email, password, rememberMe }) => {
     { upsert: true, new: true },
   );
 
-  // Emit password from user object to return to frontend
-  // Option 1: Using destructuring
-  // const {password: _, ...returnUser} = user;
-
-  //Option 2: Set password in user object to undefined to omit it
   user.password = undefined;
+  user.otp = undefined;
 
   return {
     user,
@@ -103,8 +251,26 @@ export const forgotPasswordService = async (email, clientURL) => {
 
   // Create reset token and save to db
   const resetToken = user.createResetPasswordToken();
+  // Generate raw reset token and hashed token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
   await user.save({ validateBeforeSave: false }); // skip fields constraint check
+  // Store in VerificationToken
+  await VerificationToken.findOneAndUpdate(
+    { userId: user._id, type: "password_reset" },
+    {
+      userId: user._id,
+      type: "password_reset",
+      token: hashedToken,
+      expiresAt,
+    },
+    { upsert: true, new: true },
+  );
 
   // Send mail with reset URL pointing to frontend reset password page
   const frontendURL =
@@ -114,13 +280,17 @@ export const forgotPasswordService = async (email, clientURL) => {
   try {
     await sendMail({
       to: user.email,
-      subject: "Reset your password",
+      subject: "Reset your password - Noveland",
       html: resetPasswordEmail(user.email, resetURL),
     });
   } catch (error) {
     user.password_reset_token = undefined;
     user.password_reset_expire = undefined;
-    user.save({validateBeforeSave: false});
+    await user.save({ validateBeforeSave: false });
+    await VerificationToken.deleteOne({
+      userId: user._id,
+      type: "password_reset",
+    });
     throw { status: 500, message: "Failed to send reset email" };
   }
 };
@@ -134,15 +304,26 @@ export const resetPasswordService = async (token, password) => {
   }
 
   // Hash the incoming raw token to match what is in DB
+  // Hash the incoming raw token to match what is stored in VerificationToken
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   const user = await User.findOne({
     password_reset_token: hashedToken,
     password_reset_expire: { $gt: Date.now() },
+  const tokenDoc = await VerificationToken.findOne({
+    token: hashedToken,
+    type: "password_reset",
+    expiresAt: { $gt: new Date() },
   });
 
   if (!user) {
+  if (!tokenDoc) {
     throw { status: 400, message: "Token is invalid or has expired" };
+  }
+
+  const user = await User.findById(tokenDoc.userId);
+  if (!user) {
+    throw { status: 404, message: "User not found" };
   }
 
   // Hash new password and update user
@@ -151,6 +332,9 @@ export const resetPasswordService = async (token, password) => {
   user.password_reset_token = undefined;
   user.password_reset_expire = undefined;
   await user.save();
+
+  // Delete used reset token
+  await VerificationToken.deleteOne({ _id: tokenDoc._id });
 
   // Invalidate any active refresh tokens for security
   await RefreshToken.deleteMany({ userId: user._id });

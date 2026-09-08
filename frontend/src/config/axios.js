@@ -25,22 +25,24 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const status = error.response?.status;
-    console.log("AAA", status);
-    const message = error.response?.data?.message || "Something went wrong";
 
-    // Handle global behaviors here
-    if (status === 401) {
-      console.log("Unauthorized - redirecting to login");
-      //localStorage.removeItem("token");
-      //window.location.href = "/login";
+  (error) => {
+    // No response = network error / server unreachable / timeout
+    if (!error.response) {
+      return Promise.reject({
+        status: null,
+        message: "Unable to connect to the server",
+        errors: null,
+        raw: error,
+      });
     }
 
-    // Always reject so calling code can handle it if needed
+    const { status, data } = error.response;
+
     return Promise.reject({
       status,
-      message,
+      message: data?.message || "Something went wrong",
+      errors: data?.errors || null,
       raw: error,
     });
   },

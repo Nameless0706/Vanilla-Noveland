@@ -10,18 +10,27 @@ import { toast } from "react-toastify";
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-      const data = await login(email, password);
+      const data = await login(email, password, rememberMe);
       console.log(data);
       if (data) {
+        if (data.data?.userData) {
+          localStorage.setItem("user", JSON.stringify(data.data.userData));
+        }
         toast.success("Login successfully");
         navigate("/home");
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Invalid credentials");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -67,13 +76,22 @@ function Login() {
           <div className={styles["remember-forgot"]}>
             <label>
               {" "}
-              <input type="checkbox" /> Remember me
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />{" "}
+              Remember me
             </label>
             <Link to="/forgot-password">Forgot password?</Link>
           </div>
 
-          <button type="submit" className={styles["login-btn"]}>
-            Login
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={styles["login-btn"]}
+          >
+            {isLoading ? "Logging in..." : "Login"}
           </button>
 
           <div className={styles.register}>
@@ -91,7 +109,8 @@ function Login() {
             className={styles["google-btn"]}
             onClick={handleGoogleLogin}
           >
-            <FontAwesomeIcon icon={faGoogle} className="mr-2" /> Continue with Google
+            <FontAwesomeIcon icon={faGoogle} className="mr-2" /> Continue with
+            Google
           </button>
         </form>
       </div>

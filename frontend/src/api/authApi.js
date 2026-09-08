@@ -1,9 +1,10 @@
 import { axiosInstance } from "@config/axios";
 
-export const login = async (email, password) => {
+export const login = async (email, password, rememberMe = false) => {
   const response = await axiosInstance.post("/auth/login", {
     email,
     password,
+    rememberMe,
   });
   return response.data;
 };
@@ -13,6 +14,21 @@ export const register = async (display_name, email, password) => {
     display_name,
     email,
     password,
+  });
+  return response.data;
+};
+
+export const sendVerifyOtp = async (email) => {
+  const response = await axiosInstance.post("/auth/send-otp", {
+    email,
+  });
+  return response.data;
+};
+
+export const verifyOtp = async (email, otp) => {
+  const response = await axiosInstance.post("/auth/verify", {
+    email,
+    otp,
   });
   return response.data;
 };
@@ -31,12 +47,7 @@ export const resetPassword = async (token, password) => {
   return response.data;
 };
 
-export const verifyOtp = async (email, otp) => {
-  const response = await axiosInstance.post("/auth/verify", {
-    email,
-    otp,
-  });
-
-  console.log(email, otp);
+export const logout = async () => {
+  const response = await axiosInstance.post("/auth/logout");
   return response.data;
 };

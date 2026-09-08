@@ -59,22 +59,28 @@ function Register() {
     },
   ];
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const { display_name, email, password } = { ...formValues };
       const data = await register(display_name, email, password);
       console.log(data);
       if (data) {
-        toast.success("Register successfully");
+        toast.success(
+          data.message || "Registration successful! Verification code sent.",
+        );
         navigate("/verify", {
-          state: { from: "register" },
-          email: formValues.email
+          state: { from: "register", email: formValues.email },
         });
       }
     } catch (error) {
       console.error(error);
-      toast.error("Register failed");
+      toast.error(error.message || "Registration failed");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -106,15 +112,15 @@ function Register() {
           <div className="flex justify-center">
             <button
               type="submit"
-              disabled={!isFormValid}
+              disabled={!isFormValid || isLoading}
               className={`w-full mt-2 font-medium rounded-4xl p-2.5 shadow-[0_0_10px_rgba(0,0,0,0.2)]
                         ${
-                          isFormValid
+                          isFormValid && !isLoading
                             ? "bg-[#262c3c] hover:shadow-[0_0_10px_rgba(0,0,0,0.4)] cursor-pointer"
                             : "bg-gray-400 cursor-not-allowed opacity-70"
                         }`}
             >
-              Register
+              {isLoading ? "Registering..." : "Register"}
             </button>
           </div>
 

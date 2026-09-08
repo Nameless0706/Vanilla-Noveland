@@ -3,6 +3,8 @@ import "dotenv/config";
 import { successResponse, errorResponse } from "../utils/response.js";
 import {
   registerService,
+  sendVerifyOtpService,
+  verifyOtpService,
   loginService,
   logoutService,
   refreshAccessTokenService,
@@ -14,7 +16,12 @@ export const register = async (req, res) => {
   try {
     const user = await registerService(req.body);
 
-    return successResponse(res, 201, "Register Successfully", user);
+    return successResponse(
+      res,
+      201,
+      "Registered successfully. Please check your email for the verification code.",
+      user,
+    );
   } catch (error) {
     return errorResponse(
       res,
@@ -27,7 +34,7 @@ export const register = async (req, res) => {
 export const sendVerifyOtp = async (req, res) => {
   try {
     await sendVerifyOtpService(req.body);
-    return successResponse(res, 201, "Otp send to email", user);
+    return successResponse(res, 200, "Verification code sent to your email");
   } catch (error) {
     return errorResponse(
       res,
@@ -39,8 +46,27 @@ export const sendVerifyOtp = async (req, res) => {
 
 export const verifyOtp = async (req, res) => {
   try {
-    await sendVerifyOtpService(req.body);
-    return successResponse(res, 201, "Otp send to email", user);
+    const { user, accessToken, refreshToken, refreshTokenMaxAge } =
+      await verifyOtpService(req.body);
+
+    if (accessToken) {
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        maxAge: 15 * 60 * 1000,
+      });
+    }
+
+    if (refreshToken) {
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        maxAge: refreshTokenMaxAge || 7 * 24 * 60 * 60 * 1000,
+      });
+    }
+
+    return successResponse(res, 200, "Account verified successfully", {
+      userData: user,
+      accessToken,
+    });
   } catch (error) {
     return errorResponse(
       res,
@@ -85,12 +111,12 @@ export const logout = async (req, res) => {
     if (token) {
       const decoded = jwt.decode(token);
 
-      // Must match loginService payload
       if (decoded?.userId) {
         await logoutService(decoded.userId);
       }
     }
 
+    res.clearCookie("accessToken");
     res.clearCookie("refreshToken");
 
     return successResponse(res, 200, "Logged out successfully");
