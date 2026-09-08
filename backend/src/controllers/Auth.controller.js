@@ -128,7 +128,8 @@ export const logout = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const email = req.body.email;
-    const clientURL = req.headers.origin || process.env.CLIENT_URL;
+    const clientURL =
+      req.headers.origin || process.env.APP_URL || process.env.CLIENT_URL;
     await forgotPasswordService(email, clientURL);
 
     return successResponse(

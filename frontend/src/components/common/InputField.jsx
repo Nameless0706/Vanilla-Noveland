@@ -41,7 +41,6 @@ function InputFieldset(props) {
     }, 0);
   };
 
-
   return (
     <>
       <fieldset
@@ -49,9 +48,7 @@ function InputFieldset(props) {
           customClassName || ""
         }  ${touched && error ? "border-red-600" : ""}`}
       >
-        <legend className="text-white/85 px-2">
-          {label}
-        </legend>
+        <legend className="text-white/85 px-2">{label}</legend>
         <input
           ref={inputRef}
           {...inputProps}
@@ -68,15 +65,17 @@ function InputFieldset(props) {
           />
         )}
 
-        {togglePassword && inputProps.name === "password" && (
-          <FontAwesomeIcon
-            icon={showPassword ? faEyeSlash : faEye}
-            onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
-            onClick={handleTogglePassword}
-            className="absolute right-15 mt-1.5 mr-2 cursor-pointer"
-            size="lg"
-          />
-        )}
+        {togglePassword &&
+          (inputProps.name === "password" ||
+            inputProps.name === "confirmPassword") && (
+            <FontAwesomeIcon
+              icon={showPassword ? faEyeSlash : faEye}
+              onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
+              onClick={handleTogglePassword}
+              className="absolute right-15 mt-1.5 mr-2 cursor-pointer"
+              size="lg"
+            />
+          )}
       </fieldset>
 
       {touched && error && (

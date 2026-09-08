@@ -252,7 +252,10 @@ export const forgotPasswordService = async (email, clientURL) => {
 
   // Send mail with reset URL pointing to frontend reset password page
   const frontendURL =
-    clientURL || process.env.CLIENT_URL || "http://localhost:5173";
+    clientURL ||
+    process.env.APP_URL ||
+    process.env.CLIENT_URL ||
+    "http://localhost:5173";
   const resetURL = `${frontendURL}/reset-password/${resetToken}`;
 
   try {
