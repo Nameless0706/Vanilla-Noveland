@@ -1,5 +1,6 @@
 import Novel from "../models/Novel.model.js";
 import ForumThread from "../models/ForumThread.model.js";
+import { searchBooksService } from "../services/BookApi.service.js";
 import { successResponse, errorResponse } from "../utils/response.js";
 
 export const getNovels = async (req, res) => {
@@ -70,5 +71,58 @@ export const createNovel = async (req, res) => {
     return successResponse(res, 201, "Novel created successfully", novel);
   } catch (error) {
     return errorResponse(res, 400, error.message || "Failed to create novel");
+  }
+};
+
+export const searchExternalBooks = async (req, res) => {
+  try {
+    const { q, source } = req.query;
+    if (!q) {
+      return successResponse(res, 200, "Empty search", []);
+    }
+
+    const results = await searchBooksService(q, source);
+    return successResponse(res, 200, "External books retrieved", results);
+  } catch (error) {
+    console.error("searchExternalBooks error:", error);
+    return errorResponse(res, 500, error.message || "Failed to search external books");
+  }
+};
+
+export const importExternalBook = async (req, res) => {
+  try {
+    const { title, author, cover, description, category, rating, chapters } = req.body;
+
+    if (!title || !author) {
+      return errorResponse(res, 400, "Title and author are required");
+    }
+
+    // Check if novel already exists
+    let existing = await Novel.findOne({
+      title: { $regex: new RegExp(`^${title.trim()}$`, "i") },
+    });
+
+    if (existing) {
+      return successResponse(res, 200, "Novel already exists in catalog", existing);
+    }
+
+    const novel = new Novel({
+      title: title.trim(),
+      author: author.trim(),
+      cover: cover || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80",
+      description: description || "No description provided.",
+      category: category || "Fantasy",
+      tags: ["Imported", "Online Catalog"],
+      rating: rating || 4.8,
+      chapters: chapters || 300,
+      views: "15K",
+      status: "Ongoing",
+    });
+
+    await novel.save();
+    return successResponse(res, 201, "Novel imported into catalog successfully", novel);
+  } catch (error) {
+    console.error("importExternalBook error:", error);
+    return errorResponse(res, 500, error.message || "Failed to import novel");
   }
 };
