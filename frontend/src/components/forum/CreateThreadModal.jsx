@@ -224,7 +224,7 @@ function CreateThreadModal({ isOpen, onClose, onSuccess, initialNovelId = null }
                   className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer font-medium"
                 >
                   <Globe className="w-3 h-3" />
-                  {showOnlineSearch ? "Select Existing" : "Search Google Books API"}
+                  {showOnlineSearch ? "Select Existing" : "Search Online Novels"}
                 </button>
               </div>
 
@@ -250,7 +250,7 @@ function CreateThreadModal({ isOpen, onClose, onSuccess, initialNovelId = null }
                     {[
                       { id: "all", label: "All Sources" },
                       { id: "ranobedb", label: "RanobeDB (Light Novels)" },
-                      { id: "google", label: "Google Books" },
+                      { id: "openlibrary", label: "Open Library" },
                     ].map((src) => (
                       <button
                         key={src.id}

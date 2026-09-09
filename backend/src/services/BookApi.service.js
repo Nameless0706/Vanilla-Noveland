@@ -127,55 +127,12 @@ export const searchRanobeDb = async (query) => {
 };
 
 /**
- * Search Google Books API (with Open Library fallback)
+ * Search Open Library API
  */
-export const searchGoogleAndOpenLibrary = async (query) => {
+export const searchOpenLibrary = async (query) => {
   if (!query || !query.trim()) return [];
   const cleanQuery = query.trim();
-  const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
 
-  // 1. Try Google Books API
-  try {
-    const googleUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
-      cleanQuery
-    )}&maxResults=6${apiKey ? `&key=${apiKey}` : ""}`;
-
-    const googleRes = await fetch(googleUrl);
-    if (googleRes.ok) {
-      const googleData = await googleRes.json();
-      if (googleData.items && googleData.items.length > 0) {
-        return googleData.items.map((item) => {
-          const info = item.volumeInfo || {};
-          let cover =
-            info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "";
-          if (cover && cover.startsWith("http://")) {
-            cover = cover.replace("http://", "https://");
-          }
-
-          return {
-            source: "Google Books",
-            externalId: `google-${item.id}`,
-            title: info.title || "Untitled",
-            author: info.authors ? info.authors.join(", ") : "Unknown Author",
-            cover:
-              cover ||
-              "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80",
-            description:
-              info.description || "No description provided from Google Books.",
-            category: normalizeCategory(info.categories?.[0]),
-            tags: info.categories ? info.categories.slice(0, 3) : ["Novel"],
-            rating: info.averageRating || 4.8,
-            chapters: info.pageCount || 250,
-            views: `${Math.floor(Math.random() * 50) + 10}K`,
-          };
-        });
-      }
-    }
-  } catch (err) {
-    console.warn("Google Books request error:", err.message);
-  }
-
-  // 2. Fallback to Open Library
   try {
     const olUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(
       cleanQuery
@@ -215,14 +172,14 @@ export const searchGoogleAndOpenLibrary = async (query) => {
       }
     }
   } catch (err) {
-    console.error("Open Library fallback error:", err.message);
+    console.error("Open Library search error:", err.message);
   }
 
   return [];
 };
 
 /**
- * Unified search across RanobeDB, Google Books, and Open Library
+ * Unified search across RanobeDB and Open Library
  */
 export const searchBooksService = async (query, source = "all") => {
   if (!query || !query.trim()) return [];
@@ -231,18 +188,18 @@ export const searchBooksService = async (query, source = "all") => {
     return await searchRanobeDb(query);
   }
 
-  if (source === "google") {
-    return await searchGoogleAndOpenLibrary(query);
+  if (source === "openlibrary") {
+    return await searchOpenLibrary(query);
   }
 
-  // If source === "all", run both in parallel
-  const [ranobeResults, googleResults] = await Promise.all([
+  // If source === "all", run RanobeDB and Open Library in parallel
+  const [ranobeResults, olResults] = await Promise.all([
     searchRanobeDb(query).catch(() => []),
-    searchGoogleAndOpenLibrary(query).catch(() => []),
+    searchOpenLibrary(query).catch(() => []),
   ]);
 
-  // Interleave or combine results with RanobeDB light novels first
-  return [...ranobeResults, ...googleResults];
+  // Return combined results with RanobeDB light novels first
+  return [...ranobeResults, ...olResults];
 };
 
 function normalizeCategory(cat) {

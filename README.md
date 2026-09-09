@@ -2,7 +2,7 @@
 
 > A modern, full-stack community platform and discussion forum for web novels, light novels, and serialized fiction.
 
-Noveland brings novel readers, authors, and translators together in a unified hub. Discover translated stories, delve into dedicated novel discussion boards, formulate chapter theories, review translations, and seamlessly search & import light novels from **RanobeDB** and **Google Books**.
+Noveland brings novel readers, authors, and translators together in a unified hub. Discover translated stories, delve into dedicated novel discussion boards, formulate chapter theories, review translations, and seamlessly search & import light novels from **RanobeDB** and **Open Library**.
 
 ---
 
@@ -29,9 +29,9 @@ Noveland brings novel readers, authors, and translators together in a unified hu
 - **RanobeDB API Integration (`https://ranobedb.org/api/docs/v0`)**:
   - Live search across official Japanese and English light novel series and volumes.
   - Imports official high-resolution cover artwork, authors, volume counts, and complete synopses.
-- **Google Books & Open Library APIs**:
+- **Open Library API**:
   - Live query millions of published novels, light novel adaptations, and web novels.
-  - Built-in graceful fallback to Open Library ensuring searches never hit rate-limiting blockers.
+  - Open and rate-limit friendly book catalog for community discussions.
 - **One-Click Discussion Linking**:
   - Search any light novel or book from inside the discussion modal.
   - Click **"Link"** to automatically import the novel into Noveland's MongoDB catalog and bind it to your post.
@@ -93,8 +93,8 @@ Vanilla-Noveland/
 │   │   │   ├── Novel.route.js
 │   │   │   └── User.route.js
 │   │   ├── services/
-│   │   │   ├── Auth.service.js       # Auth business logic
-│   │   │   └── BookApi.service.js    # RanobeDB & Google Books search integrations
+│   │   │   ├── Auth.service.js       # OTP generation, token signing & cookies
+│   │   │   └── BookApi.service.js    # RanobeDB & Open Library search integrations
 │   │   └── utils/
 │   │       ├── mailTemplates.js      # Responsive HTML email templates
 │   │       ├── response.js           # Standardized API response format
@@ -165,9 +165,6 @@ GMAIL_APP_PASSWORD=your_app_password
 APP_NAME=Noveland
 APP_GMAIL=noveland@gmail.com
 APP_URL=http://localhost:5173
-
-# Optional: Google Books API Key (Free on Google Cloud Console)
-GOOGLE_BOOKS_API_KEY=your_google_books_api_key_optional
 ```
 
 #### Frontend (`frontend/.env`)
@@ -218,7 +215,7 @@ Open your browser at **`http://localhost:5173`**.
 |---|---|---|
 | `GET` | `/api/novels` | List novels with search, category, and sorting |
 | `GET` | `/api/novels/:id` | Get novel details and attached discussions |
-| `GET` | `/api/novels/search/external?q=...&source=...` | Query RanobeDB & Google Books online |
+| `GET` | `/api/novels/search/external?q=...&source=...` | Query RanobeDB & Open Library online |
 | `POST` | `/api/novels/import-external` | Import book from search into catalog |
 
 ### 💬 Forum Discussions (`/api/forum`)
