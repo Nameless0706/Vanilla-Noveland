@@ -3,6 +3,7 @@ import HomePage from "@/pages/HomePage";
 import ForumHubPage from "@/pages/forum/ForumHubPage";
 import ThreadDetailPage from "@/pages/forum/ThreadDetailPage";
 import NovelDetailPage from "@/pages/novels/NovelDetailPage";
+import ProfilePage from "@/pages/profile/ProfilePage";
 import { Navigate, Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import AuthRoutes from "@/routes/AuthRoutes";
@@ -18,6 +19,8 @@ function App() {
         <Route path="/forum" element={<ForumHubPage />} />
         <Route path="/forum/thread/:id" element={<ThreadDetailPage />} />
         <Route path="/novel/:id" element={<NovelDetailPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:id" element={<ProfilePage />} />
         <Route path="/*" element={<AuthRoutes />} />
       </Routes>
       <ToastContainer

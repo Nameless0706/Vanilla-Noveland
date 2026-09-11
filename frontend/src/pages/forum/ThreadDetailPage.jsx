@@ -226,19 +226,35 @@ function ThreadDetailPage() {
 
               {/* AUTHOR HEADER */}
               <div className="flex items-center justify-between pb-6 mb-6 border-b border-slate-800 text-xs text-slate-400">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white uppercase shadow-md">
-                    {thread.author?.display_name?.charAt(0) || "U"}
+                <Link
+                  to={thread.author?._id ? `/profile/${thread.author._id}` : "#"}
+                  className="flex items-center gap-3 hover:opacity-85 transition-opacity"
+                >
+                  <div className="w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white uppercase shadow-md">
+                    {thread.author?.avatar ? (
+                      <img
+                        src={thread.author.avatar}
+                        alt={thread.author.display_name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "block";
+                        }}
+                      />
+                    ) : null}
+                    <span className={thread.author?.avatar ? "hidden" : "block"}>
+                      {thread.author?.display_name?.charAt(0) || "U"}
+                    </span>
                   </div>
                   <div>
-                    <h4 className="text-white font-bold text-sm leading-none">
+                    <h4 className="text-white font-bold text-sm leading-none hover:text-blue-400 transition-colors">
                       {thread.author?.display_name || "Community Member"}
                     </h4>
                     <p className="text-[11px] text-slate-400 mt-1">
                       Posted on {new Date(thread.createdAt).toLocaleString()}
                     </p>
                   </div>
-                </div>
+                </Link>
 
                 <div className="flex items-center gap-3 text-slate-400">
                   <span className="flex items-center gap-1">
@@ -341,19 +357,35 @@ function ThreadDetailPage() {
                       className="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-3"
                     >
                       <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-indigo-600/80 flex items-center justify-center text-xs font-bold text-white uppercase">
-                            {comment.author?.display_name?.charAt(0) || "U"}
+                        <Link
+                          to={comment.author?._id ? `/profile/${comment.author._id}` : "#"}
+                          className="flex items-center gap-2.5 hover:opacity-85 transition-opacity"
+                        >
+                          <div className="w-7 h-7 rounded-lg overflow-hidden bg-indigo-600/80 flex items-center justify-center text-xs font-bold text-white uppercase">
+                            {comment.author?.avatar ? (
+                              <img
+                                src={comment.author.avatar}
+                                alt={comment.author.display_name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  e.target.nextSibling.style.display = "block";
+                                }}
+                              />
+                            ) : null}
+                            <span className={comment.author?.avatar ? "hidden" : "block"}>
+                              {comment.author?.display_name?.charAt(0) || "U"}
+                            </span>
                           </div>
                           <div>
-                            <span className="font-bold text-slate-200">
+                            <span className="font-bold text-slate-200 hover:text-blue-400 transition-colors">
                               {comment.author?.display_name || "Reader"}
                             </span>
                             <span className="text-[10px] text-slate-500 ml-2">
                               {new Date(comment.createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                        </div>
+                        </Link>
 
                         {/* LIKE & REPLY ACTIONS */}
                         <div className="flex items-center gap-3">

@@ -352,16 +352,32 @@ function ForumHubPage() {
 
                         {/* FOOTER META */}
                         <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 pt-2 border-t border-slate-800/60">
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-[10px] text-white font-bold uppercase">
-                              {thread.author?.display_name?.charAt(0) || "U"}
+                          <Link
+                            to={thread.author?._id ? `/profile/${thread.author._id}` : "#"}
+                            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                          >
+                            <div className="w-5 h-5 rounded-full overflow-hidden bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-[10px] text-white font-bold uppercase">
+                              {thread.author?.avatar ? (
+                                <img
+                                  src={thread.author.avatar}
+                                  alt={thread.author.display_name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                    e.target.nextSibling.style.display = "block";
+                                  }}
+                                />
+                              ) : null}
+                              <span className={thread.author?.avatar ? "hidden" : "block"}>
+                                {thread.author?.display_name?.charAt(0) || "U"}
+                              </span>
                             </div>
-                            <span className="text-slate-300 font-medium">
+                            <span className="text-slate-300 font-medium hover:text-blue-400 transition-colors">
                               {thread.author?.display_name || "Reader"}
                             </span>
                             <span>•</span>
                             <span>{new Date(thread.createdAt).toLocaleDateString()}</span>
-                          </div>
+                          </Link>
 
                           <div className="flex items-center gap-4 text-slate-400">
                             <span className="flex items-center gap-1">

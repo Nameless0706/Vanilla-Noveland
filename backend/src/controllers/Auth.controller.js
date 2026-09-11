@@ -170,6 +170,11 @@ export const getNewAccessToken = async (req, res) => {
 
     const accessToken = await refreshAccessTokenService(token);
 
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      maxAge: 15 * 60 * 1000,
+    });
+
     return successResponse(res, 200, "Token refreshed", {
       accessToken,
     });
